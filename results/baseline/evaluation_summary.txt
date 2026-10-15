@@ -1,0 +1,23 @@
+ORB-SLAM3 RGB-D Trajectory Evaluation
+Dataset: TUM RGB-D freiburg1_desk
+
+Estimated poses: 596
+Matched poses: 596
+Timestamp matching tolerance: 0.020 seconds
+Mean timestamp difference: 0.00173 seconds
+
+Independent evaluator: evo_ape
+Alignment: SE(3) Umeyama
+ATE RMSE: 0.017092 m
+ATE mean: 0.014253 m
+ATE median: 0.011763 m
+ATE maximum: 0.066066 m
+ATE standard deviation: 0.009434 m
+
+Results were cross-checked against a custom Python
+trajectory evaluation script. Both reported an RMSE
+of approximately 0.0171 m.
+
+This experiment evaluates RGB-D SLAM on a recorded
+benchmark sequence. Drone visual-inertial integration
+remains future work.
