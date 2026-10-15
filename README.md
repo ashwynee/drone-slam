@@ -1,137 +1,150 @@
 # Visual SLAM and Drone Navigation
 
-A computer vision and robotics project exploring Simultaneous
-Localization and Mapping (SLAM) using ORB-SLAM3, RGB-D sensor data,
-trajectory evaluation, and drone simulation tools.
+An ongoing computer vision and robotics project exploring Simultaneous Localization and Mapping (SLAM), trajectory evaluation, and the foundations of autonomous drone navigation.
+
+The current milestone is a working **ORB-SLAM3 RGB-D pipeline** evaluated on the TUM RGB-D benchmark. Future phases will extend the project to visual-inertial SLAM and drone simulation.
+
+## Results
+
+**Dataset:** TUM RGB-D — `freiburg1_desk`
+**SLAM system:** ORB-SLAM3, RGB-D mode
+**Evaluation:** Absolute Trajectory Error (ATE), after rigid trajectory alignment
+
+| Metric | Result |
+|---|---:|
+| Estimated camera poses | 596 |
+| Matched ground-truth poses | 596 / 596 |
+| ATE RMSE | 0.017092 m |
+| ATE median | 0.011763 m |
+| ATE mean | 0.014253 m |
+| ATE maximum | 0.066066 m |
+| Mean timestamp difference | 0.00173 s |
+
+The trajectory evaluation was independently cross-checked using the `evo` trajectory evaluation toolkit. Both implementations reported an ATE RMSE of approximately **1.71 cm**.
+
+These results are specific to this recorded RGB-D sequence and the stated alignment procedure. They do not represent real-world drone navigation accuracy.
+
+## Trajectory Visualizations
+
+### Estimated Trajectory vs. Ground Truth
+
+![Trajectory comparison](results/trajectory_comparison.png)
+
+### Position Error Over Time
+
+![Trajectory error](results/trajectory_error.png)
 
 ## Project Overview
 
-This project uses recorded RGB-D data to estimate camera motion,
-reconstruct a trajectory, and evaluate localization accuracy against
-ground-truth poses.
+The pipeline processes recorded RGB and depth images, estimates camera poses, and compares the estimated trajectory against ground-truth camera poses.
 
-The initial experiment uses the TUM RGB-D benchmark. The next phase
-will extend the workflow to visual-inertial drone datasets and
-PX4/Gazebo simulation.
+### Current Pipeline
 
-## Technology Stack
-
-- C++
-- Python 3
-- ORB-SLAM3
-- OpenCV
-- Eigen
-- Pangolin
-- NumPy
-- Matplotlib
-- Ubuntu 22.04
-- ROS 2 Humble
-- PX4 and Gazebo (planned integration)
-
-## Dataset
-
-TUM RGB-D benchmark: freiburg1_desk
-
-Dataset source:
-https://cvg.cit.tum.de/rgbd/dataset/freiburg1
-
-The sequence contains RGB images, depth images, timestamps, and
-ground-truth camera poses.
-
-The dataset is used for offline RGB-D SLAM evaluation. This experiment
-does not yet perform visual-inertial drone navigation.
-
-## Implementation
-
-1. Prepare the recorded RGB and depth image sequences.
+1. Prepare the RGB-D dataset.
 2. Associate RGB and depth frames using timestamps.
 3. Run ORB-SLAM3 in RGB-D mode.
 4. Export estimated camera and keyframe trajectories.
-5. Match estimated poses with ground-truth timestamps.
+5. Match estimated poses to ground-truth timestamps.
 6. Align trajectories using rigid rotation and translation.
 7. Calculate Absolute Trajectory Error (ATE).
 8. Visualize the trajectory and position error.
+9. Cross-check the evaluation using `evo`.
 
-## Preliminary Results
+## Technology Stack
 
-The initial local evaluation reported:
+- **SLAM:** ORB-SLAM3
+- **Programming:** C++, Python 3
+- **Computer vision:** OpenCV
+- **Numerical computing:** Eigen, NumPy
+- **Visualization:** Pangolin, Matplotlib
+- **Environment:** Ubuntu 22.04
+- **Robotics:** ROS 2 Humble
+- **Planned simulation:** PX4 and Gazebo
 
-- Estimated camera poses: 596
-- ATE RMSE: approximately 0.017 m
-- Equivalent RMSE: approximately 1.7 cm
+## Dataset
 
-These are preliminary results from the local evaluation script.
-The matched-pose count, timestamp tolerance, alignment method, and
-evaluation implementation should be verified before treating the
-number as a final benchmark result.
+**TUM RGB-D — freiburg1_desk**
 
-## Output Files
+Dataset: https://cvg.cit.tum.de/rgbd/dataset/freiburg1
 
-- results/CameraTrajectory.txt
-- results/KeyFrameTrajectory.txt
-- results/trajectory_comparison.png
-- results/trajectory_error.png
-- results/baseline/
+The sequence contains RGB images, depth images, timestamps, and ground-truth camera poses.
 
-The baseline directory preserves copies of the initial trajectories
-and visualizations.
+The current experiment evaluates offline RGB-D SLAM. Visual-inertial drone navigation has not yet been implemented.
 
-## Project Structure
+## Repository Structure
 
+```text
 drone-slam/
-├── data/
-├── results/
-│   └── baseline/
+├── README.md
 ├── scripts/
 │   ├── associate.py
 │   └── evaluate_trajectory.py
-├── .venv/
-└── README.md
+└── results/
+    ├── CameraTrajectory.txt
+    ├── KeyFrameTrajectory.txt
+    ├── aligned_trajectory_comparison.txt
+    ├── trajectory_comparison.png
+    ├── trajectory_error.png
+    └── baseline/
+```
 
-Dataset files and the Python virtual environment should remain local
-rather than being committed to Git.
+The dataset, virtual environment, and ORB-SLAM3 source/build files are maintained separately from this repository.
 
-## Reproducibility
+## Reproducing the Experiment
 
-Python environment:
+### 1. Set up Python
 
-    python3 -m venv .venv
-    source .venv/bin/activate
-    python -m pip install "numpy==1.26.4" "matplotlib==3.8.4" pandas pyyaml opencv-python
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install "numpy==1.26.4" "matplotlib==3.8.4" pandas pyyaml opencv-python
+```
 
-Generate RGB-depth associations:
+### 2. Prepare the dataset
 
-    python scripts/associate.py
+Download the `freiburg1_desk` sequence from the official TUM RGB-D dataset page and extract it locally.
+
+Build ORB-SLAM3 and its dependencies using the official instructions:
+
+https://github.com/UZ-SLAMLab/ORB_SLAM3
+
+### 3. Run the pipeline
+
+Generate RGB-depth associations using the repository's association script:
+
+```bash
+python scripts/associate.py
+```
+
+Run the ORB-SLAM3 RGB-D example using the vocabulary, configuration, dataset, and association file paths appropriate to your local installation.
 
 Evaluate the saved trajectory:
 
-    python scripts/evaluate_trajectory.py
+```bash
+python scripts/evaluate_trajectory.py
+```
 
-The ORB-SLAM3 executable and vocabulary must be built and available
-at the paths configured in the local run instructions.
+The evaluation scripts and ORB-SLAM3 build expect the relevant dataset and software dependencies to be available locally.
 
 ## Roadmap
 
 - [x] Set up the Python environment.
 - [x] Build ORB-SLAM3 and its dependencies.
-- [x] Run an RGB-D sequence.
+- [x] Run an RGB-D benchmark sequence.
 - [x] Export camera and keyframe trajectories.
 - [x] Generate trajectory comparison and error plots.
 - [x] Preserve baseline outputs.
-- [ ] Validate the evaluation against an independent implementation.
+- [x] Cross-check ATE evaluation using `evo`.
 - [ ] Evaluate additional benchmark sequences.
 - [ ] Run visual-inertial SLAM on a drone-specific dataset.
 - [ ] Integrate PX4 and Gazebo simulation.
 - [ ] Compare simulated drone trajectories with ground truth.
+- [ ] Explore onboard deployment and real-time constraints.
 
 ## Future Work
 
-The long-term goal is a drone navigation workflow combining camera
-and IMU measurements, visual-inertial localization, mapping, and
-simulation-based evaluation.
+The long-term goal is to develop a drone navigation pipeline combining camera and IMU measurements, visual-inertial localization, mapping, and simulation-based evaluation.
 
-## License and Attribution
+## Attribution
 
-ORB-SLAM3 and the dataset retain their original licenses and
-attribution requirements. Refer to their official sources before
-redistributing code or data.
+ORB-SLAM3, the TUM RGB-D dataset, and other dependencies retain their respective licenses and attribution requirements. Refer to their official sources before redistributing code or data.
