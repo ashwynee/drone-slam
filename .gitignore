@@ -3,3 +3,17 @@ data/
 __pycache__/
 *.pyc
 build/
+
+# Generated build artifacts
+build/
+install/
+log/
+**/build/
+**/install/
+**/log/
+*.so
+*.o
+*.a
+
+# Datasets and generated trajectories
+datasets/
