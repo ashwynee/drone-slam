@@ -157,3 +157,21 @@ The evaluator `scripts/evaluate_live.py` creates the live plots, aligned CSV and
 ## Attribution
 
 ORB-SLAM3, the TUM RGB-D dataset, EuRoC MAV dataset, and dependencies retain their respective licenses and attribution requirements. See upstream documentation before redistributing third-party assets.
+
+
+### One-click Windows launcher
+
+For WSL2 on Windows, `scripts/launch_demo.bat` opens separate windows for PX4/Gazebo, the camera bridge, the ground-truth recorder, and ORB-SLAM3. It archives previous trajectory/evaluation outputs before preparing a fresh run. It does **not** arm or move the drone automatically. Preflight and movement remain manual safety-controlled actions.
+
+To install the launcher on the Windows Desktop from the WSL Ubuntu terminal:
+
+```bash
+mkdir -p ~/drone-slam/scripts
+curl -fL https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/prepare_demo_run.sh -o ~/drone-slam/scripts/prepare_demo_run.sh
+curl -fL https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/launch_demo.bat -o ~/drone-slam/scripts/launch_demo.bat
+chmod +x ~/drone-slam/scripts/prepare_demo_run.sh
+WIN_DESKTOP="$(powershell.exe -NoProfile -Command '[Environment]::GetFolderPath("Desktop")' | tr -d '\r')"
+cp ~/drone-slam/scripts/launch_demo.bat "$(wslpath "$WIN_DESKTOP")/Drone-SLAM Demo.bat"
+```
+
+The existing local `scripts/record_gt.py` recorder is still required in `~/drone-slam/scripts/`. Keep that file in place. First test the launcher while observing the terminal windows; WSL, Gazebo startup time, or a changed local setup may require adjusting its delays.
