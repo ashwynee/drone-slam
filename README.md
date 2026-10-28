@@ -161,17 +161,23 @@ ORB-SLAM3, the TUM RGB-D dataset, EuRoC MAV dataset, and dependencies retain the
 
 ### One-click Windows launcher
 
-For WSL2 on Windows, `scripts/launch_demo.bat` attempts to open QGroundControl (GCS) from the Windows Start Menu or common install paths, then opens separate windows for PX4/Gazebo, the camera bridge, the ground-truth recorder, and ORB-SLAM3. QGroundControl detection and connection to PX4 must be verified on the local machine; if it is not found, launch it manually from the Windows Start menu. The launcher archives previous trajectory/evaluation outputs before preparing a fresh run. It does **not** arm or move the drone automatically. Preflight and movement remain manual safety-controlled actions.
+The Windows Desktop file `scripts/launch_demo.bat` is a staged launcher for WSL2. It refreshes Linux helper scripts from this repository, asks before stopping only matching Drone-SLAM/PX4/Gazebo/ROS processes, performs storage/filesystem/package checks, archives previous run outputs, then opens/validates the components in order:
 
-To install the launcher on the Windows Desktop from the WSL Ubuntu terminal:
+1. QGroundControl process is open (it does not verify QGC's visible link state).
+2. PX4 SITL + Gazebo; waits for the expected Gazebo camera topic.
+3. ROS 2 camera bridge; waits for an actual image message using sensor-data QoS.
+4. Ground-truth recorder; waits until `ground_truth.txt` has rows.
+5. ORB-SLAM3 ROS node; verifies the process remains running.
+
+The launcher stops at a failed stage rather than continuing blindly. It leaves component windows open if a command exits so the error remains visible. Before starting, it checks that the WSL and Windows C: volumes each have at least 4 GB available and performs a write/read check in the PX4 directory because a previous run reported logger/DataManager I/O failures. Existing run outputs are copied to `results/live_gazebo/archive/` before the trajectory files are reset.
+
+**Important limitations:** startup checks do not prove ORB-SLAM3 has initialized; inspect its window for tracking state 2. A stationary camera provides no parallax, so the drone needs a safe, controlled viewpoint change after QGroundControl is connected and PX4 preflight/sensor status is clean. The launcher never arms or moves the vehicle automatically. QGroundControl's saved UDP link must target the current WSL `eth0` IP on port `18570`; the preflight prints the current IP because WSL addresses can change after restart. The existing local `~/drone-slam/scripts/record_gt.py` is required and is not overwritten by this launcher.
+
+To update the Desktop launcher from a WSL Ubuntu terminal on this machine:
 
 ```bash
-mkdir -p ~/drone-slam/scripts
-curl -fL https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/prepare_demo_run.sh -o ~/drone-slam/scripts/prepare_demo_run.sh
 curl -fL https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/launch_demo.bat -o ~/drone-slam/scripts/launch_demo.bat
-chmod +x ~/drone-slam/scripts/prepare_demo_run.sh
-WIN_DESKTOP="$(powershell.exe -NoProfile -Command '[Environment]::GetFolderPath("Desktop")' | tr -d '\r')"
-cp ~/drone-slam/scripts/launch_demo.bat "$(wslpath "$WIN_DESKTOP")/Drone-SLAM Demo.bat"
+sed 's/$/\r/' ~/drone-slam/scripts/launch_demo.bat > "/mnt/c/Users/borah/OneDrive/Desktop/Drone-SLAM Demo.bat"
 ```
 
-The existing local `scripts/record_gt.py` recorder is still required in `~/drone-slam/scripts/`. Keep that file in place. First test the launcher while observing the terminal windows; WSL, Gazebo startup time, or a changed local setup may require adjusting its delays.
+After updating the Windows Desktop file, double-click **Drone-SLAM Demo.bat**. The launcher downloads its helper scripts automatically, so they do not need to be installed by hand. Answer `Y` to confirm the clean restart; choose `N` to cancel without stopping anything.
