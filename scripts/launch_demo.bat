@@ -26,7 +26,7 @@ start "Ground Truth Recorder" wsl.exe -e bash -lc "source /opt/ros/humble/setup.
 
 timeout /t 5 /nobreak >nul
 echo Starting ORB-SLAM3...
-start "ORB-SLAM3" wsl.exe -e bash -lc "source /opt/ros/humble/setup.bash && cd ~/px4_ros2_ws && source install/setup.bash && export LD_LIBRARY_PATH=\$HOME/ORB_SLAM3/lib:\$LD_LIBRARY_PATH && ros2 run orbslam3_ros orbslam3_node --ros-args -r '/world/default/model/x500_mono_cam_down_0/link/camera_link/sensor/camera/image:=/world/walls/model/x500_mono_cam_0/link/camera_link/sensor/camera/image'"
+start "ORB-SLAM3" wsl.exe -e bash -lc "source /opt/ros/humble/setup.bash && cd ~/px4_ros2_ws && source install/setup.bash && export LD_LIBRARY_PATH=$HOME/ORB_SLAM3/lib:$LD_LIBRARY_PATH && ros2 run orbslam3_ros orbslam3_node --ros-args -r '/world/default/model/x500_mono_cam_down_0/link/camera_link/sensor/camera/image:=/world/walls/model/x500_mono_cam_0/link/camera_link/sensor/camera/image'"
 
 echo.
 echo Launcher started. Verify the four new terminal windows stay open and show no errors.
