@@ -7,7 +7,7 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 ARCHIVE="$RESULTS/archive/run_$STAMP"
 mkdir -p "$ARCHIVE"
 
-for file in LiveCameraTrajectory.txt ground_truth.txt live_trajectory_comparison.png live_trajectory_error.png live_aligned_trajectory.csv live_evaluation_metrics.txt; do
+for file in LiveCameraTrajectory.txt ground_truth.txt live_trajectory_comparison.png live_trajectory_error.png live_aligned_trajectory.csv live_evaluation_metrics.txt px4_console.log; do
   if [[ -f "$RESULTS/$file" ]]; then
     cp -a "$RESULTS/$file" "$ARCHIVE/"
   fi
