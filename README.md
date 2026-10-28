@@ -163,13 +163,13 @@ ORB-SLAM3, the TUM RGB-D dataset, EuRoC MAV dataset, and dependencies retain the
 
 The Windows Desktop file `scripts/launch_demo.bat` is a staged launcher for WSL2. It refreshes Linux helper scripts from this repository, asks before stopping only matching Drone-SLAM/PX4/Gazebo/ROS processes, performs storage/filesystem/package checks, archives previous run outputs, then opens/validates the components in order:
 
-1. QGroundControl process is open (it does not verify QGC's visible link state).
-2. PX4 SITL + Gazebo; waits for the expected Gazebo camera topic.
-3. ROS 2 camera bridge; waits for an actual image message using sensor-data QoS.
+1. QGroundControl process is open (the PX4 console health check separately checks recent GCS status; still verify the visible QGC connection).
+2. PX4 SITL + Gazebo; saves the PX4 console to `results/live_gazebo/px4_console.log`, waits for `Ready for takeoff!`, then checks for sensor/EKF, logger/DataManager I/O, and GCS failures.
+3. Waits for the expected Gazebo camera topic, then starts the ROS 2 camera bridge and waits for an actual image message using sensor-data QoS.
 4. Ground-truth recorder; waits until `ground_truth.txt` has rows.
 5. ORB-SLAM3 ROS node; verifies the process remains running.
 
-The launcher stops at a failed stage rather than continuing blindly. It leaves component windows open if a command exits so the error remains visible. Before starting, it checks that the WSL and Windows C: volumes each have at least 4 GB available and performs a write/read check in the PX4 directory because a previous run reported logger/DataManager I/O failures. Existing run outputs are copied to `results/live_gazebo/archive/` before the trajectory files are reset.
+The launcher stops at a failed stage rather than continuing blindly. It leaves component windows open if a command exits so the error remains visible. Before starting, it checks that the WSL and Windows C: volumes each have at least 4 GB available and performs write/read checks in the PX4 repository and SITL rootfs/log directories because a previous run reported logger/DataManager I/O failures. Existing run outputs are copied to `results/live_gazebo/archive/` before the trajectory files are reset.
 
 **Important limitations:** startup checks do not prove ORB-SLAM3 has initialized; inspect its window for tracking state 2. A stationary camera provides no parallax, so the drone needs a safe, controlled viewpoint change after QGroundControl is connected and PX4 preflight/sensor status is clean. The launcher never arms or moves the vehicle automatically. QGroundControl's saved UDP link must target the current WSL `eth0` IP on port `18570`; the preflight prints the current IP because WSL addresses can change after restart. The existing local `~/drone-slam/scripts/record_gt.py` is required and is not overwritten by this launcher.
 
