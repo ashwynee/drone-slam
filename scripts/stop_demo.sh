@@ -4,7 +4,7 @@ set -Eeuo pipefail
 # Stop only processes belonging to this Drone-SLAM PX4/Gazebo demo.
 # Do not stop QGroundControl or unrelated Gazebo worlds.
 patterns=(
-  '[o]rbslam3_ros orbslam3_node'
+  '[o]rbslam3_node'
   '[p]arameter_bridge'
   '[r]ecord_gt.py'
   '[p]x4_sitl_default'
