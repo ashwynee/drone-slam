@@ -5,7 +5,7 @@ fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
 ok() { echo "[OK] $*"; }
 
 echo "=== Drone-SLAM preflight ==="
-echo "Checking paths, ROS packages, available storage, and old processes."
+echo "Checking required paths, ROS packages, available storage, filesystem writeability, and duplicate processes."
 echo
 
 for path in \
@@ -26,15 +26,15 @@ ok "Gazebo CLI and timeout are available."
 
 home_free="$(df -Pm "$HOME" | awk 'NR==2 {print $4}')"
 [[ "$home_free" =~ ^[0-9]+$ ]] || fail "Could not read free space for $HOME."
-if (( home_free < 2048 )); then
-  fail "Only ${home_free} MB free on the WSL filesystem; at least 2048 MB is required. Free space before starting PX4 because its logger previously reported I/O errors."
+if (( home_free < 4096 )); then
+  fail "Only ${home_free} MB free on the WSL filesystem; at least 4096 MB is required for a fresh PX4/Gazebo run. Free space first because the previous run reported logger/dataman I/O errors."
 fi
 ok "WSL filesystem has ${home_free} MB available."
 
 if [[ -d /mnt/c ]]; then
   c_free="$(df -Pm /mnt/c | awk 'NR==2 {print $4}')"
-  if [[ "$c_free" =~ ^[0-9]+$ ]] && (( c_free < 2048 )); then
-    fail "Only ${c_free} MB free on Windows C:. Free at least 2048 MB before starting this simulation."
+  if [[ "$c_free" =~ ^[0-9]+$ ]] && (( c_free < 4096 )); then
+    fail "Only ${c_free} MB free on Windows C:. Free at least 4096 MB before starting this simulation."
   fi
   [[ "$c_free" =~ ^[0-9]+$ ]] && ok "Windows C: has ${c_free} MB available."
 fi
@@ -42,12 +42,14 @@ fi
 for path in "$HOME/PX4-Autopilot" "$HOME/px4_ros2_ws" "$HOME/drone-slam"; do
   [[ -w "$path" ]] || fail "Not writable: $path"
 done
-touch "$HOME/PX4-Autopilot/.drone_slam_write_test" 2>/dev/null || fail "Cannot write to PX4-Autopilot; investigate WSL storage/I/O errors."
-rm -f "$HOME/PX4-Autopilot/.drone_slam_write_test"
-ok "Project directories pass a write test."
+write_test="$HOME/PX4-Autopilot/.drone_slam_write_test"
+printf "drone-slam-write-test\\n" > "$write_test" 2>/dev/null || fail "Cannot write to PX4-Autopilot; investigate WSL storage/I/O errors."
+grep -qx "drone-slam-write-test" "$write_test" 2>/dev/null || fail "WSL filesystem write/read test failed; do not start PX4 until storage is healthy."
+rm -f "$write_test"
+ok "PX4 repository write/read test passed."
 
 # Do not kill old processes automatically; duplicate SITL instances can corrupt logs or compete for simulator ports.
-existing="$(pgrep -af '[p]x4_sitl_default|[m]ake px4_sitl|[g]z sim|[o]rbslam3_node|[p]arameter_bridge|[r]ecord_gt.py' || true)"
+existing="$(pgrep -af '[p]x4_sitl_default|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_ros orbslam3_node|[p]arameter_bridge|[r]ecord_gt.py' || true)"
 if [[ -n "$existing" ]]; then
   echo "$existing"
   fail "Existing PX4/Gazebo/ROS demo processes are still running. Close the old demo windows cleanly, then run the launcher again."
