@@ -1,194 +1,159 @@
-# Visual SLAM and Drone Navigation
+# Live Drone-SLAM Simulation
 
-An ongoing computer vision and robotics project exploring Simultaneous Localization and Mapping (SLAM), visual-inertial estimation, trajectory evaluation, and the foundations of autonomous drone navigation.
+A simulation-based monocular visual SLAM prototype integrating **PX4 SITL**, **Gazebo**, **ROS 2 Humble**, and **ORB-SLAM3**. This repository includes earlier offline RGB-D and EuRoC experiments plus the live simulation integration and evaluation.
 
-This project currently includes two offline benchmark experiments:
-- ORB-SLAM3 RGB-D on the TUM RGB-D `freiburg1_desk` sequence.
-- ORB-SLAM3 Stereo-Inertial on the EuRoC MAV `MH_01_easy` sequence.
+## Live simulation architecture
 
-**Scope:** These are recorded-dataset experiments. Integration with PX4/Gazebo, live drone navigation, and onboard deployment remain future work.
+```text
+PX4 SITL + Gazebo (walls world, x500_mono_cam)
+                    |
+                    v
+           Gazebo camera image
+                    |
+                    v
+             ros_gz_bridge
+                    |
+                    v
+             ROS 2 image topic
+                    |
+                    v
+               ORB-SLAM3
+             /           \
+      sparse map       camera poses
+                           |
+                           +---- Gazebo ground-truth poses
+                                      |
+                                      v
+                             trajectory evaluation
+```
 
-## Experiments and Results
+## Live simulation: observed results
 
-### 1. TUM RGB-D — freiburg1_desk
+The live camera stream delivered **320×240 images at approximately 4.6–5 Hz**. ORB-SLAM3 reached tracking state **2** and was observed tracking hundreds of map points, including during a controlled Gazebo movement of approximately **1.06 m horizontally**. A timestamped, model-filtered Gazebo ground-truth recorder was implemented and verified.
 
-| Metric | Result |
-|---|---:|
-| Estimated camera poses | 596 |
-| Matched ground-truth poses | 596 / 596 |
-| ATE RMSE | 0.017092 m |
-| ATE median | 0.011763 m |
-| ATE mean | 0.014253 m |
-| ATE maximum | 0.066066 m |
-
-The trajectory evaluation was independently cross-checked using the `evo` trajectory evaluation toolkit. Both implementations reported an ATE RMSE of approximately **1.71 cm**.
-
-These results apply to this recorded RGB-D sequence and the stated alignment procedure; they do not represent real-world drone navigation accuracy.
-
-### 2. EuRoC MAV — MH_01_easy
-
-**Configuration:** ORB-SLAM3 Stereo-Inertial
-**Dataset:** EuRoC MAV `MH_01_easy`
-**Evaluation:** Preliminary Absolute Trajectory Error (ATE), following rigid trajectory alignment.
+A preliminary similarity-aligned evaluation on the recorded live run produced:
 
 | Metric | Preliminary result |
 |---|---:|
-| Estimated poses | 3,593 |
-| Matched poses within 10 ms | 3,571 |
-| Match coverage | 99.39% |
-| ATE RMSE | 0.0660 m |
-| ATE median | 0.0547 m |
-| ATE maximum | 0.1458 m |
+| SLAM input rows | 3,176 |
+| Ground-truth input rows | 24,755 |
+| Timestamp-matched SLAM poses | 2,360 |
+| Overlap | 428.4–900.8 s |
+| Estimated monocular scale | 4.334112 m / map unit |
+| Aligned ATE RMSE | 0.314582 m |
+| Aligned ATE median | 0.146724 m |
+| Aligned ATE maximum | 1.208540 m |
+| Ground-truth path length | 21.309730 m |
+| Aligned SLAM path length | 36.338119 m |
+| Ground-truth net displacement | 3.136216 m |
 
-The preliminary evaluation script matches estimated and ground-truth timestamps, applies the configured camera/body extrinsic transform, aligns the trajectories, and computes position errors.
+**Interpretation and limitations:** the plotted trajectories diverge and the error plot includes spikes. The similarity transform and scale were estimated using the same trajectory being evaluated, so these numbers are *preliminary aligned errors*, not an independent accuracy benchmark. SLAM estimates the camera pose while Gazebo ground truth is the drone model pose; camera-to-body extrinsics also affect comparisons. Robustness and drift still need improvement.
 
-**Important limitation:** The run logged an initialization reset before recovering. The EuRoC evaluation and coordinate-frame conventions still require validation, so these metrics should not be treated as definitive accuracy claims. High timestamp-match coverage alone does not establish continuous tracking.
+### Live trajectory comparison
 
-## Visualizations
+![Gazebo ground truth vs aligned and scale-corrected ORB-SLAM3 trajectory](results/live_gazebo/live_trajectory_comparison.png)
 
-### TUM RGB-D trajectory comparison
+### Live position error
 
-![TUM RGB-D trajectory comparison](results/trajectory_comparison.png)
+![Preliminary aligned position error over Gazebo simulation time](results/live_gazebo/live_trajectory_error.png)
 
-### TUM RGB-D position error
+Associated CSV and report: [aligned trajectory CSV](results/live_gazebo/live_aligned_trajectory.csv) · [metrics report](results/live_gazebo/live_evaluation_metrics.txt).
 
-![TUM RGB-D position error](results/trajectory_error.png)
+## Offline benchmark results (separate from live simulation)
 
-### EuRoC trajectory comparison
+### TUM RGB-D — freiburg1_desk
 
-![EuRoC trajectory comparison](results/euroc_mh01/trajectory_comparison.png)
+| Metric | Result |
+|---|---:|
+| Estimated / matched poses | 573 |
+| Match coverage | 100% |
+| ATE RMSE | 0.0231 m |
+| ATE median | 0.0173 m |
+| ATE maximum | 0.0667 m |
 
-### EuRoC position error
+These values apply to a separate offline RGB-D experiment and **must not be presented as live monocular Gazebo accuracy**.
 
-![EuRoC position error](results/euroc_mh01/trajectory_error.png)
+### EuRoC MAV — MH_01_easy
 
-The plots are generated from recorded benchmark trajectories. The live ORB-SLAM3 viewer is used to inspect feature tracking and the reconstructed sparse map during execution.
+The repository also contains a preliminary ORB-SLAM3 Stereo-Inertial evaluation of EuRoC `MH_01_easy` (ATE RMSE 0.0660 m, median 0.0547 m, maximum 0.1458 m). Initialization continuity and coordinate-frame conventions still require validation.
 
-## Pipeline
+Existing offline visualizations:
+- [TUM trajectory comparison](results/trajectory_comparison.png)
+- [TUM position error](results/trajectory_error.png)
+- [EuRoC trajectory comparison](results/euroc_mh01/trajectory_comparison.png)
+- [EuRoC position error](results/euroc_mh01/trajectory_error.png)
 
-1. Prepare the benchmark dataset and its timestamps.
-2. Configure ORB-SLAM3 for the selected sensor mode.
-3. Run the recorded RGB-D or stereo-inertial sequence.
-4. Export estimated camera and keyframe trajectories.
-5. Match estimates to ground-truth timestamps.
-6. Align estimated and reference trajectories.
-7. Calculate Absolute Trajectory Error (ATE).
-8. Generate trajectory comparison and position-error plots.
-9. Cross-check the RGB-D evaluation with `evo`.
+## Environment and project paths
 
-## Technology Stack
+- Ubuntu 22.04 under WSL2
+- ROS 2 Humble
+- PX4 repository: `~/PX4-Autopilot`
+- Gazebo world: `~/PX4-Autopilot/Tools/simulation/gz/worlds/walls.sdf`
+- Drone model: `~/PX4-Autopilot/Tools/simulation/gz/models/x500_mono_cam/model.sdf`
+- ROS workspace: `~/px4_ros2_ws`
+- ORB-SLAM3: `~/ORB_SLAM3`
+- Config: `~/ORB_SLAM3/Examples/Monocular/Drone320.yaml`
+- Results: `~/drone-slam/results/live_gazebo/`
 
-- **SLAM:** ORB-SLAM3
-- **Languages:** C++, Python
-- **Computer vision:** OpenCV
-- **Numerical computing:** Eigen, NumPy
-- **Visualization:** Pangolin, Matplotlib
-- **Environment:** Ubuntu 22.04
-- **Robotics:** ROS 2 Humble environment available for future integration
-- **Planned simulation:** PX4 and Gazebo
+## Run the live simulation
 
-## Repository Structure
+Use separate terminals. Verify spawn position and preflight status on each run. Never bypass PX4 safety checks.
 
-```text
-drone-slam/
-├── README.md
-├── scripts/
-│   ├── associate.py
-│   ├── evaluate_trajectory.py
-│   └── evaluate_euroc.py
-└── results/
-    ├── CameraTrajectory.txt
-    ├── KeyFrameTrajectory.txt
-    ├── trajectory_comparison.png
-    ├── trajectory_error.png
-    ├── baseline/
-    └── euroc_mh01/
-        ├── CameraTrajectory.txt
-        ├── KeyFrameTrajectory.txt
-        ├── aligned_trajectory.txt
-        ├── trajectory_comparison.png
-        └── trajectory_error.png
-```
-
-The EuRoC dataset, large dataset archives, Python virtual environment, and ORB-SLAM3 source/build files are kept outside this repository.
-
-## Reproducing the Experiments
-
-### 1. Python environment
+### Terminal 1 — PX4 + Gazebo
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install "numpy==1.26.4" "matplotlib==3.8.4" pandas pyyaml opencv-python
+cd ~/PX4-Autopilot
+PX4_SIM_SPEED_FACTOR=1 make px4_sitl gz_x500_mono_cam_walls
 ```
 
-### 2. Build ORB-SLAM3
+At `pxh>` run `commander check` and verify the spawned model is near the feature wall.
 
-Follow the upstream build instructions and install its required dependencies:
-
-https://github.com/UZ-SLAMLab/ORB_SLAM3
-
-### 3. TUM RGB-D experiment
-
-Download and extract the `freiburg1_desk` sequence from:
-
-https://cvg.cit.tum.de/rgbd/dataset/freiburg1
-
-Generate the required RGB-depth associations:
+### Terminal 2 — ROS 2 camera bridge
 
 ```bash
-python scripts/associate.py
+source /opt/ros/humble/setup.bash
+ros2 run ros_gz_bridge parameter_bridge \
+'/world/walls/model/x500_mono_cam_0/link/camera_link/sensor/camera/image@sensor_msgs/msg/Image[gz.msgs.Image' \
+'/world/walls/model/x500_mono_cam_0/link/camera_link/sensor/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo'
 ```
 
-Run the ORB-SLAM3 RGB-D example using your local vocabulary, configuration, dataset, and association paths. Then evaluate the exported trajectory:
+### Terminal 3 — ORB-SLAM3 node
 
 ```bash
-python scripts/evaluate_trajectory.py
+source /opt/ros/humble/setup.bash
+cd ~/px4_ros2_ws
+source install/setup.bash
+export LD_LIBRARY_PATH="$HOME/ORB_SLAM3/lib:$LD_LIBRARY_PATH"
+ros2 run orbslam3_ros orbslam3_node --ros-args \
+-r '/world/default/model/x500_mono_cam_down_0/link/camera_link/sensor/camera/image:=/world/walls/model/x500_mono_cam_0/link/camera_link/sensor/camera/image'
 ```
 
-### 4. EuRoC stereo-inertial experiment
+### Terminal 4 — filtered Gazebo ground truth
 
-Download the EuRoC MAV dataset and extract `MH_01_easy`. From the ORB-SLAM3 source directory, run:
+The helper `scripts/record_gt.py` records only model `x500_mono_cam_0` from `/world/walls/dynamic_pose/info` in TUM format. Stop it with Ctrl+C after the test. Before isolated runs, stop ORB-SLAM3 cleanly and archive prior logs because the SLAM logger opens its trajectory in append mode.
 
 ```bash
-cd ~/ORB_SLAM3
-
-./Examples/Stereo-Inertial/stereo_inertial_euroc \
-  Vocabulary/ORBvoc.txt \
-  Examples/Stereo-Inertial/EuRoC.yaml \
-  ~/datasets/euroc/MH_01_easy \
-  Examples/Stereo-Inertial/EuRoC_TimeStamps/MH01.txt
+python3 ~/drone-slam/scripts/record_gt.py \
+  ~/drone-slam/results/live_gazebo/ground_truth.txt
 ```
 
-Copy the exported trajectory files into this repository's `results/euroc_mh01/` directory, then run the evaluation script from the repository root:
+The evaluator `scripts/evaluate_live.py` creates the live plots, aligned CSV and metrics report.
 
-```bash
-cd ~/drone-slam
-source .venv/bin/activate
-python scripts/evaluate_euroc.py
-```
+## Repository contents
 
-Dataset paths may need to be adjusted for your local installation. Download the datasets separately; do not commit dataset archives to Git.
+- `ros2_ws/src/orbslam3_ros/` — ROS 2 ORB-SLAM3 node and build files
+- `config/Drone320.yaml` — camera settings
+- `scripts/` — association and trajectory evaluation utilities
+- `results/` — offline benchmark results and live simulation outputs
 
-## Roadmap
+## Known limitations and next work
 
-- [x] Build ORB-SLAM3 and its dependencies.
-- [x] Run the TUM RGB-D benchmark.
-- [x] Export trajectories and generate evaluation plots.
-- [x] Cross-check RGB-D ATE with `evo`.
-- [x] Run ORB-SLAM3 Stereo-Inertial on EuRoC `MH_01_easy`.
-- [x] Export EuRoC trajectories and generate preliminary evaluation plots.
-- [ ] Validate EuRoC coordinate-frame and extrinsic-transform conventions.
-- [ ] Investigate initialization resets and tracking continuity.
-- [ ] Evaluate additional benchmark sequences.
-- [ ] Integrate SLAM output with PX4/Gazebo simulation.
-- [ ] Compare simulated drone trajectories against ground truth.
-- [ ] Explore onboard deployment and real-time constraints.
-
-## Future Work
-
-The long-term goal is to develop a drone navigation pipeline combining camera and IMU measurements, visual-inertial localization, mapping, and simulation-based evaluation. Future work will focus on evaluation reliability, navigation-stack integration, and deployment constraints.
+1. Improve initialization and recovery when the camera's view changes substantially.
+2. Validate live results on a held-out movement segment after estimating scale/alignment on a separate segment.
+3. Apply the camera-to-body extrinsic transform before comparing camera poses with drone model poses.
+4. Investigate drift and the error spikes in the current live trajectory evaluation.
+5. Current milestone is **simulation only**; physical phone/IMU visual-inertial integration is outside scope.
 
 ## Attribution
 
-ORB-SLAM3, the TUM RGB-D dataset, the EuRoC MAV dataset, and all other dependencies retain their respective licenses and attribution requirements. Refer to the upstream project and dataset documentation before redistributing their contents.
+ORB-SLAM3, the TUM RGB-D dataset, EuRoC MAV dataset, and dependencies retain their respective licenses and attribution requirements. See upstream documentation before redistributing third-party assets.

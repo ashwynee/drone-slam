@@ -1,0 +1,16 @@
+LIVE GAZEBO SLAM EVALUATION
+Metric: position ATE after similarity alignment and scale correction
+SLAM input rows: 3176
+Ground-truth input rows: 24755
+Timestamp-matched SLAM poses: 2360
+Overlapping interval: 428.400 to 900.800 s
+Estimated scale: 4.334112 metres per SLAM map unit
+Aligned ATE RMSE: 0.314582 m
+Aligned ATE median: 0.146724 m
+Aligned ATE maximum: 1.208540 m
+Ground-truth path length: 21.309730 m
+Aligned SLAM path length: 36.338119 m
+Ground-truth net displacement: 3.136216 m
+Raw SLAM net displacement: 0.609381 map units
+
+Caution: the similarity transform and scale were estimated from the same trajectory, so these results are preliminary aligned errors rather than an independent accuracy benchmark. The SLAM output is camera pose while the ground truth is drone model pose; camera-to-body extrinsics may affect the comparison. The plots show drift and error spikes.
