@@ -48,6 +48,18 @@ grep -qx "drone-slam-write-test" "$write_test" 2>/dev/null || fail "WSL filesyst
 rm -f "$write_test"
 ok "PX4 repository write/read test passed."
 
+# PX4 SITL writes logs and DataManager files under its build rootfs, so check those directories too.
+px4_rootfs="$HOME/PX4-Autopilot/build/px4_sitl_default/rootfs"
+[[ -d "$px4_rootfs" ]] || fail "PX4 SITL rootfs is missing: $px4_rootfs"
+mkdir -p "$px4_rootfs/log" 2>/dev/null || fail "Cannot create/access PX4 SITL log directory: $px4_rootfs/log"
+for dir in "$px4_rootfs" "$px4_rootfs/log"; do
+  write_test="$dir/.drone_slam_write_test"
+  printf "drone-slam-write-test\\n" > "$write_test" 2>/dev/null || fail "Cannot write inside $dir; prior PX4 logger/DataManager I/O errors may still be present."
+  grep -qx "drone-slam-write-test" "$write_test" 2>/dev/null || fail "Write/read test failed inside $dir."
+  rm -f "$write_test"
+done
+ok "PX4 SITL rootfs and log directory pass write/read tests."
+
 # Do not kill old processes automatically; duplicate SITL instances can corrupt logs or compete for simulator ports.
 existing="$(pgrep -af '[p]x4_sitl_default|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_node|[p]arameter_bridge.*world/walls/model/x500_mono_cam_0|[r]ecord_gt.py' || true)"
 if [[ -n "$existing" ]]; then
