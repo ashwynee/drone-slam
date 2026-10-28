@@ -5,7 +5,7 @@ set -Eeuo pipefail
 # Do not stop QGroundControl or unrelated Gazebo worlds.
 patterns=(
   '[o]rbslam3_node'
-  '[p]arameter_bridge'
+  '[p]arameter_bridge.*world/walls/model/x500_mono_cam_0'
   '[r]ecord_gt.py'
   '[p]x4_sitl_default'
   '[g]z sim.*walls'
