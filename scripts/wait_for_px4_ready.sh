@@ -9,13 +9,25 @@ for ((i=1; i<=180; i++)); do
     sleep 8
     ready_line="$(grep -nF 'Ready for takeoff!' "$LOG" | tail -n 1 | cut -d: -f1)"
     [[ "$ready_line" =~ ^[0-9]+$ ]] || { echo "ERROR: Could not locate PX4 readiness marker in $LOG" >&2; exit 1; }
-    post_ready="$(tail -n +"$ready_line" "$LOG")"
+    # These storage errors are fatal wherever they appear in this fresh console log.
+    io_errors="$(grep -Ei 'logger.*write failed|dataman.*file read failed|dataman_client.*readSync failed' "$LOG" || true)"
+    if [[ -n "$io_errors" ]]; then
+      echo "ERROR: PX4 reported logger/DataManager I/O errors:" >&2
+      echo "$io_errors" >&2
+      echo "Do not arm. Check disk space/filesystem health and inspect $LOG." >&2
+      exit 1
+    fi
 
-    errors="$(grep -Ei 'Accel #0 fail:.*TIMEOUT|logger.*write failed|dataman.*file read failed|dataman_client.*readSync failed|Preflight Fail: ekf2 missing data' <<< "$post_ready" || true)"
-    if [[ -n "$errors" ]]; then
-      echo "ERROR: PX4 reported sensor or filesystem/DataManager errors after readiness:" >&2
-      echo "$errors" >&2
+    post_ready="$(tail -n +"$ready_line" "$LOG")"
+    sensor_errors="$(grep -Ei 'Accel #0 fail:.*TIMEOUT|Preflight Fail: ekf2 missing data' <<< "$post_ready" || true)"
+    if [[ -n "$sensor_errors" ]]; then
+      echo "ERROR: PX4 reported sensor/EKF errors after readiness:" >&2
+      echo "$sensor_errors" >&2
       echo "Do not arm. See the PX4 + Gazebo window and $LOG." >&2
+      exit 1
+    fi
+    if ! pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[p]x4_sitl_default' >/dev/null; then
+      echo "ERROR: PX4/Gazebo exited during the post-start health check." >&2
       exit 1
     fi
 
