@@ -11,6 +11,9 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo Launching QGroundControl (GCS), if installed...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$roots=@($env:ProgramData+'\Microsoft\Windows\Start Menu\Programs',$env:APPDATA+'\Microsoft\Windows\Start Menu\Programs'); $lnk=Get-ChildItem $roots -Filter 'QGroundControl.lnk' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1; if($lnk){Start-Process $lnk.FullName; exit 0}; $paths=@($env:ProgramFiles+'\QGroundControl\QGroundControl.exe', ${env:ProgramFiles(x86)}+'\QGroundControl\QGroundControl.exe', $env:LOCALAPPDATA+'\Programs\QGroundControl\QGroundControl.exe'); $exe=$paths | Where-Object { Test-Path $_ } | Select-Object -First 1; if($exe){Start-Process $exe} else {Write-Host 'QGroundControl shortcut/executable not found. Open QGroundControl from the Windows Start menu manually.'}"
+
 echo Starting PX4 + Gazebo...
 start "PX4 + Gazebo" wsl.exe -e bash -lc "cd ~/PX4-Autopilot && PX4_SIM_SPEED_FACTOR=1 make px4_sitl gz_x500_mono_cam_walls"
 
