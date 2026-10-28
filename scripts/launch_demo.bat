@@ -49,7 +49,7 @@ if errorlevel 1 (
   powershell.exe -NoProfile -Command "if (Get-Process -Name QGroundControl -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
   if errorlevel 1 goto failed
 )
-timeout /t 8 /nobreak >nul
+timeout /t 15 /nobreak >nul
 powershell.exe -NoProfile -Command "if (Get-Process -Name QGroundControl -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
 if errorlevel 1 (
   echo QGroundControl did not stay open.
@@ -63,6 +63,7 @@ set "FAIL_STAGE=starting PX4/Gazebo"
 echo.
 echo [5/7] Starting PX4 + Gazebo in its own window...
 start "PX4 + Gazebo" wsl.exe -e bash -lc "cd ~/PX4-Autopilot || { echo 'PX4-Autopilot folder not found'; read -r -p 'Press Enter to close...' _; exit 1; }; echo 'Starting PX4 SITL and Gazebo walls world'; PX4_SIM_SPEED_FACTOR=1 make px4_sitl gz_x500_mono_cam_walls; rc=$?; echo; echo 'PX4/Gazebo exited with code' $rc; read -r -p 'PX4/Gazebo stopped. Press Enter to close...' _"
+set "FAIL_STAGE=waiting for the Gazebo camera topic"
 echo Waiting for the actual Gazebo camera topic (up to 180 seconds)...
 wsl.exe -e bash -lc "bash ~/drone-slam/scripts/wait_for_gz_camera.sh"
 if errorlevel 1 goto failed
