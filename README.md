@@ -161,7 +161,7 @@ ORB-SLAM3, the TUM RGB-D dataset, EuRoC MAV dataset, and dependencies retain the
 
 ### One-click Windows launcher
 
-For WSL2 on Windows, `scripts/launch_demo.bat` opens separate windows for PX4/Gazebo, the camera bridge, the ground-truth recorder, and ORB-SLAM3. It archives previous trajectory/evaluation outputs before preparing a fresh run. It does **not** arm or move the drone automatically. Preflight and movement remain manual safety-controlled actions.
+For WSL2 on Windows, `scripts/launch_demo.bat` attempts to open QGroundControl (GCS) from the Windows Start Menu or common install paths, then opens separate windows for PX4/Gazebo, the camera bridge, the ground-truth recorder, and ORB-SLAM3. QGroundControl detection and connection to PX4 must be verified on the local machine; if it is not found, launch it manually from the Windows Start menu. The launcher archives previous trajectory/evaluation outputs before preparing a fresh run. It does **not** arm or move the drone automatically. Preflight and movement remain manual safety-controlled actions.
 
 To install the launcher on the Windows Desktop from the WSL Ubuntu terminal:
 
