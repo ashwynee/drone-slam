@@ -49,7 +49,7 @@ rm -f "$write_test"
 ok "PX4 repository write/read test passed."
 
 # Do not kill old processes automatically; duplicate SITL instances can corrupt logs or compete for simulator ports.
-existing="$(pgrep -af '[p]x4_sitl_default|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_node|[p]arameter_bridge|[r]ecord_gt.py' || true)"
+existing="$(pgrep -af '[p]x4_sitl_default|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_node|[p]arameter_bridge.*world/walls/model/x500_mono_cam_0|[r]ecord_gt.py' || true)"
 if [[ -n "$existing" ]]; then
   echo "$existing"
   fail "Existing PX4/Gazebo/ROS demo processes are still running. Close the old demo windows cleanly, then run the launcher again."
