@@ -57,7 +57,7 @@ A preliminary similarity-aligned evaluation on the recorded live run produced:
 
 ![Preliminary aligned position error over Gazebo simulation time](results/live_gazebo/live_trajectory_error.png)
 
-Associated CSV and report: [aligned trajectory CSV](results/live_gazebo/live_aligned_trajectory.csv) · [metrics report](results/live_gazebo/live_evaluation_metrics.txt).
+Full metric report: [live_evaluation_metrics.txt](results/live_gazebo/live_evaluation_metrics.txt).
 
 ## Offline benchmark results (separate from live simulation)
 
