@@ -11,7 +11,6 @@ echo
 for path in \
   "$HOME/PX4-Autopilot/Tools/simulation/gz/worlds/walls.sdf" \
   "$HOME/PX4-Autopilot/Tools/simulation/gz/models/x500_mono_cam/model.sdf" \
-  "$HOME/PX4-Autopilot/install/setup.bash" \
   "$HOME/px4_ros2_ws/install/setup.bash" \
   "$HOME/ORB_SLAM3/lib/libORB_SLAM3.so" \
   "$HOME/ORB_SLAM3/Vocabulary/ORBvoc.txt" \
