@@ -3,7 +3,7 @@
 # Do not enable nounset in this script: ROS 2 setup files may reference unset vars.
 set -Ee -o pipefail
 
-readonly PRECHECK_VERSION="2026-10-29.7"
+readonly PRECHECK_VERSION="2026-10-29.8"
 fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
 ok() { echo "[OK] $*"; }
 
@@ -67,7 +67,18 @@ for dir in "$px4_rootfs" "$px4_rootfs/log"; do
 done
 ok "PX4 repository, SITL rootfs, and log directory pass write/read tests."
 
-existing="$(pgrep -af '[/]px4_sitl_default/bin/px4([[:space:]]|$)|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_node|[p]arameter_bridge.*world/walls/model/x500_mono_cam_0|[r]ecord_gt.py' || true)"
+existing="$(ps -eo pid=,comm=,args= | awk '
+  {
+    pid=$1; comm=$2; args=$0
+    sub(/^[[:space:]]*[0-9]+[[:space:]]+[^[:space:]]+[[:space:]]+/, "", args)
+    if (comm == "px4") print pid " " comm " " args
+    else if (comm == "make" && args ~ /^make px4_sitl gz_x500_mono_cam_walls([[:space:]]|$)/) print pid " " comm " " args
+    else if (comm == "gz" && args ~ /^gz sim .*\/worlds\/walls\.sdf([[:space:]]|$)/) print pid " " comm " " args
+    else if (comm == "orbslam3_node") print pid " " comm " " args
+    else if (comm == "ros2" && args ~ /^ros2 run ros_gz_bridge parameter_bridge .*world\/walls\/model\/x500_mono_cam_0/) print pid " " comm " " args
+    else if ((comm == "python3" || comm == "python") && args ~ /\/drone-slam\/scripts\/record_gt\.py([[:space:]]|$)/) print pid " " comm " " args
+  }
+' || true)"
 if [[ -n "$existing" ]]; then
   echo "$existing"
   fail "Old Drone-SLAM processes remain after the stop step."
