@@ -3,7 +3,7 @@
 # Do not enable nounset in this script: ROS 2 setup files may reference unset vars.
 set -Ee -o pipefail
 
-readonly PRECHECK_VERSION="2026-10-29.4"
+readonly PRECHECK_VERSION="2026-10-29.5"
 fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
 ok() { echo "[OK] $*"; }
 
