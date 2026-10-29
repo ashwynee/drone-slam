@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Do not enable nounset here: ROS 2 setup scripts reference optional unset vars.
+# Force nounset off explicitly in case the caller exported SHELLOPTS or a profile enabled it.
+set +u
 set -Ee -o pipefail
 
 fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
