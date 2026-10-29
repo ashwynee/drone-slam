@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-source /opt/ros/humble/setup.bash
+# ROS setup may reference optional environment variables that are unset.
+set +u
+if ! source /opt/ros/humble/setup.bash; then
+  set -u
+  echo "ERROR: Could not source ROS 2 Humble." >&2
+  exit 1
+fi
+set -u
 topic='/world/walls/model/x500_mono_cam_0/link/camera_link/sensor/camera/image'
 echo "Waiting up to 90 seconds for an actual ROS camera message..."
 for ((i=1; i<=30; i++)); do
