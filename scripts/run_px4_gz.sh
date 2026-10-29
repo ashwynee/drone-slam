@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-readonly PX4_LAUNCH_VERSION="2026-10-29.6"
+readonly PX4_LAUNCH_VERSION="2026-10-29.7"
 set -uo pipefail
 
 PX4_DIR="$HOME/PX4-Autopilot"
