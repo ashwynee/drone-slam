@@ -67,10 +67,33 @@ if [[ -n "$existing" ]]; then
 fi
 ok "No duplicate Drone-SLAM processes found."
 
-source /opt/ros/humble/setup.bash || fail "Could not source ROS 2 Humble."
-source "$HOME/px4_ros2_ws/install/setup.bash" || fail "Could not source the px4_ros2_ws overlay."
+# ROS setup scripts use environment variables that may intentionally be unset.
+# Temporarily disable nounset while sourcing the ROS and workspace overlays.
+set +u
+if ! source /opt/ros/humble/setup.bash; then
+  set -u
+  fail "Could not source ROS 2 Humble."
+fi
+if ! source "$HOME/px4_ros2_ws/install/setup.bash"; then
+  set -u
+  fail "Could not source the px4_ros2_ws overlay."
+fi
+set -u
+
 orb_executables="$(ros2 pkg executables orbslam3_ros 2>/dev/null || true)"
-grep -Eq '(^|[[:space:]])orbslam3_node$' <<< "$orb_executables" || fail "ROS executable orbslam3_ros/orbslam3_node is not installed in the workspace."
+grep -Eq '(^|[[:space:]])orbslam3_node
+
+ip4_details="$(ip -4 addr show eth0 2>/dev/null || true)"
+wsl_ip="$(awk '/inet / {split($2,a,"/"); print a[1]; exit}' <<< "$ip4_details")"
+if [[ -n "$wsl_ip" ]]; then
+  echo
+  echo "Current WSL eth0 IP: $wsl_ip"
+  echo "QGroundControl's saved UDP link should target this IP on port 18570."
+fi
+
+echo
+echo "PRECHECK PASSED. No vehicle arming or movement was commanded."
+ <<< "$orb_executables" || fail "ROS executable orbslam3_ros/orbslam3_node is not installed in the workspace."
 ros2 pkg prefix ros_gz_bridge >/dev/null 2>&1 || fail "ROS package ros_gz_bridge is not available."
 ok "ROS 2 Humble, ros_gz_bridge, and orbslam3_node are available."
 
