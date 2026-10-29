@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Force nounset off explicitly in case the caller exported SHELLOPTS or a profile enabled it.
-set +u
+# Version marker confirms the launcher downloaded the current helper from GitHub.
+# Do not enable nounset in this script: ROS 2 setup files may reference unset vars.
 set -Ee -o pipefail
 
+readonly PRECHECK_VERSION="2026-10-29.3"
 fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
 ok() { echo "[OK] $*"; }
 
-echo "=== Drone-SLAM preflight ==="
+echo "=== Drone-SLAM preflight v$PRECHECK_VERSION ==="
 echo "Checking required files, storage, filesystem writes, ROS packages, and duplicate processes."
 echo
 
@@ -52,7 +53,7 @@ done
 
 test_file="$HOME/PX4-Autopilot/.drone_slam_write_test"
 printf 'drone-slam-write-test\n' > "$test_file" 2>/dev/null || fail "Cannot write to PX4-Autopilot."
-grep -qx 'drone-slam-write-test' "$test_file" || fail "PX4 repository write/read test failed."
+grep -qx drone-slam-write-test "$test_file" || fail "PX4 repository write/read test failed."
 rm -f "$test_file"
 
 px4_rootfs="$HOME/PX4-Autopilot/build/px4_sitl_default/rootfs"
@@ -61,7 +62,7 @@ mkdir -p "$px4_rootfs/log" 2>/dev/null || fail "Cannot access PX4 SITL log direc
 for dir in "$px4_rootfs" "$px4_rootfs/log"; do
   test_file="$dir/.drone_slam_write_test"
   printf 'drone-slam-write-test\n' > "$test_file" 2>/dev/null || fail "Cannot write in $dir; previous PX4 I/O errors may persist."
-  grep -qx 'drone-slam-write-test' "$test_file" || fail "Write/read test failed in $dir."
+  grep -qx drone-slam-write-test "$test_file" || fail "Write/read test failed in $dir."
   rm -f "$test_file"
 done
 ok "PX4 repository, SITL rootfs, and log directory pass write/read tests."
@@ -73,16 +74,18 @@ if [[ -n "$existing" ]]; then
 fi
 ok "No duplicate Drone-SLAM processes found."
 
-# ROS setup files expect optional variables to be unset; leave nounset disabled.
-source /opt/ros/humble/setup.bash || fail "Could not source ROS 2 Humble."
-source "$HOME/px4_ros2_ws/install/setup.bash" || fail "Could not source the ROS workspace overlay."
-
-orb_executables="$(ros2 pkg executables orbslam3_ros 2>/dev/null || true)"
-if ! awk '$NF == "orbslam3_node" { found=1 } END { exit !found }' <<< "$orb_executables"; then
-  fail "ROS executable orbslam3_ros/orbslam3_node is not installed in the workspace."
+# Isolate ROS setup from inherited shell options and profile files. nounset must be off.
+if env -u SHELLOPTS bash --noprofile --norc -c '
+  set +u
+  source /opt/ros/humble/setup.bash || exit 21
+  source "$HOME/px4_ros2_ws/install/setup.bash" || exit 22
+  ros2 pkg prefix ros_gz_bridge >/dev/null 2>&1 || exit 23
+  ros2 pkg executables orbslam3_ros | grep -F orbslam3_node >/dev/null || exit 24
+'; then
+  ok "ROS 2 Humble, ros_gz_bridge, and orbslam3_node are available."
+else
+  fail "ROS setup or required ROS package/executable check failed. The nested shell disables inherited SHELLOPTS and nounset."
 fi
-ros2 pkg prefix ros_gz_bridge >/dev/null 2>&1 || fail "ROS package ros_gz_bridge is not available."
-ok "ROS 2 Humble, ros_gz_bridge, and orbslam3_node are available."
 
 ip4_details="$(ip -4 addr show eth0 2>/dev/null || true)"
 wsl_ip="$(awk '/inet / {split($2,a,"/"); print a[1]; exit}' <<< "$ip4_details")"
