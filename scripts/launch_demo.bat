@@ -17,11 +17,11 @@ if errorlevel 2 goto cancelled
 set "FAIL_STAGE=updating launcher helper scripts"
 echo.
 echo [1/7] Updating Linux helper scripts from GitHub...
-wsl.exe -e bash -lc "set -euo pipefail; mkdir -p ~/drone-slam/scripts; for f in prepare_demo_run.sh preflight_demo.sh stop_demo.sh wait_for_px4_ready.sh run_px4_gz.sh wait_for_gz_camera.sh wait_for_ros_camera.sh wait_for_ground_truth.sh verify_orbslam_process.sh; do curl -fsSL --retry 2 --connect-timeout 10 https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/$f'?rev=20261029.5' -o ~/drone-slam/scripts/$f.tmp || exit 1; mv ~/drone-slam/scripts/$f.tmp ~/drone-slam/scripts/$f || exit 1; done; chmod +x ~/drone-slam/scripts/*.sh"
+wsl.exe -e bash -lc "set -euo pipefail; mkdir -p ~/drone-slam/scripts; for f in prepare_demo_run.sh preflight_demo.sh stop_demo.sh wait_for_px4_ready.sh run_px4_gz.sh wait_for_gz_camera.sh wait_for_ros_camera.sh wait_for_ground_truth.sh verify_orbslam_process.sh; do curl -fsSL --retry 2 --connect-timeout 10 https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/$f'?rev=20261029.6' -o ~/drone-slam/scripts/$f.tmp || exit 1; mv ~/drone-slam/scripts/$f.tmp ~/drone-slam/scripts/$f || exit 1; done; chmod +x ~/drone-slam/scripts/*.sh"
 if errorlevel 1 goto failed
-wsl.exe -e bash -lc "grep -Fq 2026-10-29.4 ~/drone-slam/scripts/preflight_demo.sh || { echo 'ERROR: Latest preflight helper was not downloaded; check internet access.'; exit 1; }"
+wsl.exe -e bash -lc "grep -Fq 2026-10-29.5 ~/drone-slam/scripts/preflight_demo.sh && grep -Fq 2026-10-29.6 ~/drone-slam/scripts/wait_for_px4_ready.sh && grep -Fq 2026-10-29.6 ~/drone-slam/scripts/run_px4_gz.sh || { echo 'ERROR: One or more latest launcher helpers were not downloaded; check internet access.'; exit 1; }"
 if errorlevel 1 (
-  echo The downloaded helper version is stale or incomplete. Nothing was started.
+  echo A required helper is stale or incomplete. Nothing will start.
   goto failed
 )
 
@@ -47,7 +47,7 @@ set "FAIL_STAGE=launching QGroundControl"
 echo.
 echo [4/7] Opening QGroundControl...
 echo Searching shortcuts and common install paths. If none are found, a file picker will let you select QGroundControl.exe.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; try { $p=Join-Path $env:TEMP 'Drone-SLAM-launch_qgc.ps1'; Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/launch_qgc.ps1?rev=20261029.5' -OutFile $p; if (!(Test-Path $p)) { throw 'QGroundControl helper download failed' }; & $p } catch { Write-Error $_; exit 1 }"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; try { $p=Join-Path $env:TEMP 'Drone-SLAM-launch_qgc.ps1'; Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/launch_qgc.ps1?rev=20261029.6' -OutFile $p; if (!(Test-Path $p)) { throw 'QGroundControl helper download failed' }; & $p } catch { Write-Error $_; exit 1 }"
 if errorlevel 1 goto failed
 timeout /t 15 /nobreak >nul
 powershell.exe -NoProfile -Command "if (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '(?i)qgroundcontrol|qgc' }) { exit 0 } else { exit 1 }"
@@ -67,7 +67,12 @@ echo [5/7] Starting PX4 + Gazebo in its own window...
 start "PX4 + Gazebo" wsl.exe -e bash -lc "bash ~/drone-slam/scripts/run_px4_gz.sh"
 set "FAIL_STAGE=waiting for PX4 readiness, GCS, and sensor/storage health"
 wsl.exe -e bash -lc "bash ~/drone-slam/scripts/wait_for_px4_ready.sh"
-if errorlevel 1 goto failed
+if errorlevel 1 (
+  echo.
+  echo PX4 health check failed. Stopping this demo's processes to avoid leaving a half-running simulation...
+  wsl.exe -e bash -lc "bash ~/drone-slam/scripts/stop_demo.sh"
+  goto failed
+)
 
 set "FAIL_STAGE=waiting for the Gazebo camera topic"
 echo Waiting for the actual Gazebo camera topic (up to 180 seconds)...
