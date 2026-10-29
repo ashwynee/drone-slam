@@ -3,7 +3,7 @@
 # Avoid 'set -e' here so a failed diagnostic command never exits silently.
 set -uo pipefail
 
-readonly PX4_HEALTH_VERSION="2026-10-29.6"
+readonly PX4_HEALTH_VERSION="2026-10-29.7"
 LOG="$HOME/drone-slam/results/live_gazebo/px4_console.log"
 
 fail() {
@@ -40,7 +40,7 @@ done
 
 # Use awk for line selection. grep | tail | cut can raise SIGPIPE under pipefail
 # when the PX4 console contains many repeated status lines.
-ready_line="$(awk '/Ready for takeoff!/ { last=NR } END { if (last > 0) print last }' "$LOG")"
+ready_line="$(awk '/Ready for takeoff!/ { if (first == 0) first=NR } END { if (first > 0) print first }' "$LOG")"
 [[ "$ready_line" =~ ^[0-9]+$ ]] || fail "Could not locate the PX4 readiness marker in the console log."
 
 echo "[OK] PX4 reported Ready for takeoff! Checking sensor, storage, and GCS status..."
@@ -50,11 +50,15 @@ if ! pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[p]x4_sitl_default' >/dev
   fail "PX4/Gazebo exited during the health check."
 fi
 
-if grep -Eiq 'MAVLink only on localhost|logger.*write failed|dataman.*file read failed|dataman_client.*readSync failed' "$LOG"; then
-  io_or_network_errors="$(grep -Ei 'MAVLink only on localhost|logger.*write failed|dataman.*file read failed|dataman_client.*readSync failed' "$LOG" || true)"
-  fail "PX4 logged a localhost-only MAVLink or filesystem/DataManager I/O error. The network/storage issue must be resolved before continuing:
-$io_or_network_errors"
+if grep -Eiq 'logger.*write failed|dataman.*file read failed|dataman_client.*readSync failed' "$LOG"; then
+  io_errors="$(grep -Ei 'logger.*write failed|dataman.*file read failed|dataman_client.*readSync failed' "$LOG" || true)"
+  fail "PX4 logged filesystem/DataManager I/O errors. The storage problem must be resolved before continuing:
+$io_errors"
 fi
+
+# A localhost-only warning may refer to another MAVLink instance. The decisive
+# GCS gate is the newest commander/preflight GCS event below; keep the warning
+# in the failure log excerpt instead of rejecting a healthy GCS connection.
 
 sensor_errors="$(awk -v start="$ready_line" 'NR >= start && /Accel #0 fail:.*TIMEOUT|Preflight Fail: ekf2 missing data/ { print }' "$LOG")"
 if [[ -n "$sensor_errors" ]]; then
@@ -79,7 +83,7 @@ case "$gcs_status" in
     echo "[OK] Latest PX4 GCS event: $gcs_status"
     ;;
   *)
-    fail "PX4 still reports an unhealthy GCS link (latest event: $gcs_status). Confirm QGroundControl is connected to WSL eth0 IP on UDP 18570 and that the firewall permits the traffic."
+    fail "PX4 still reports an unhealthy GCS link (latest event: $gcs_status). Confirm QGroundControl is connected to WSL eth0 IP on UDP 18570 and that the firewall permits the traffic. If the log says 'MAVLink only on localhost', the broadcast setting is not taking effect for the relevant MAVLink instance."
     ;;
 esac
 
