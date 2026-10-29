@@ -163,7 +163,7 @@ ORB-SLAM3, the TUM RGB-D dataset, EuRoC MAV dataset, and dependencies retain the
 
 The Windows Desktop file `scripts/launch_demo.bat` is a staged launcher for WSL2. It refreshes Linux helper scripts from this repository, asks before stopping only matching Drone-SLAM/PX4/Gazebo/ROS processes, performs storage/filesystem/package checks, archives previous run outputs, then opens/validates the components in order:
 
-1. QGroundControl process is open (the PX4 console health check separately checks recent GCS status; still verify the visible QGC connection).
+1. QGroundControl is discovered via existing process, Start Menu shortcuts/app entries, common install/portable folders, and a file-picker fallback when automatic discovery fails (the PX4 console health check separately checks recent GCS status; still verify the visible QGC connection).
 2. PX4 SITL + Gazebo; saves the PX4 console to `results/live_gazebo/px4_console.log`, waits for `Ready for takeoff!`, then checks for sensor/EKF, logger/DataManager I/O, and GCS failures.
 3. Waits for the expected Gazebo camera topic, then starts the ROS 2 camera bridge and waits for an actual image message using sensor-data QoS.
 4. Ground-truth recorder; waits until `ground_truth.txt` has rows.
