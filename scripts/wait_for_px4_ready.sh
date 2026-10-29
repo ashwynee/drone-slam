@@ -3,7 +3,7 @@
 # Avoid 'set -e' here so a failed diagnostic command never exits silently.
 set -uo pipefail
 
-readonly PX4_HEALTH_VERSION="2026-10-29.7"
+readonly PX4_HEALTH_VERSION="2026-10-29.8"
 LOG="$HOME/drone-slam/results/live_gazebo/px4_console.log"
 
 fail() {
@@ -22,25 +22,35 @@ fail() {
 }
 
 echo "PX4 health checker v$PX4_HEALTH_VERSION"
-echo "Waiting up to 180 seconds for PX4 to report Ready for takeoff..."
+echo "Waiting up to 180 seconds for this run's PX4 startup marker and Ready for takeoff..."
 ready=0
+process_seen=0
 for ((i=1; i<=180; i++)); do
-  if [[ -f "$LOG" ]] && grep -Fq 'Ready for takeoff!' "$LOG"; then
+  # Never trust a readiness line unless the current-run sentinel is present in the same log.
+  if [[ -f "$LOG" ]] && grep -Fq 'DRONE-SLAM PX4 RUN STARTED UTC=' "$LOG" && grep -Fq 'Ready for takeoff!' "$LOG"; then
     ready=1
     break
   fi
 
-  if ! pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[p]x4_sitl_default' >/dev/null 2>&1; then
-    fail "PX4/Gazebo exited before reporting Ready for takeoff."
+  if pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[/]px4_sitl_default/bin/px4([[:space:]]|$)' >/dev/null 2>&1; then
+    process_seen=1
+  elif (( i >= 20 )) && (( process_seen == 0 )); then
+    fail "PX4/Gazebo process did not appear within 20 seconds. Check the PX4 + Gazebo window."
+  elif (( process_seen == 1 )) && (( i >= 20 )); then
+    # If the process disappeared after having been seen, report failure instead of
+    # waiting the full timeout on a stale log.
+    if ! pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[/]px4_sitl_default/bin/px4([[:space:]]|$)' >/dev/null 2>&1; then
+      fail "PX4/Gazebo process exited before reporting Ready for takeoff."
+    fi
   fi
   sleep 1
 done
 
-[[ "$ready" -eq 1 ]] || fail "PX4 did not report Ready for takeoff within 180 seconds."
+[[ "$ready" -eq 1 ]] || fail "This run did not report Ready for takeoff within 180 seconds. The sentinel and PX4 output above show what actually started."
 
 # Use awk for line selection. grep | tail | cut can raise SIGPIPE under pipefail
 # when the PX4 console contains many repeated status lines.
-ready_line="$(awk '/Ready for takeoff!/ { if (first == 0) first=NR } END { if (first > 0) print first }' "$LOG")"
+ready_line="$(awk '/DRONE-SLAM PX4 RUN STARTED UTC=/ { run_start=NR } run_start > 0 && /Ready for takeoff!/ { if (first == 0) first=NR } END { if (first > 0) print first }' "$LOG")"
 [[ "$ready_line" =~ ^[0-9]+$ ]] || fail "Could not locate the PX4 readiness marker in the console log."
 
 echo "[OK] PX4 reported Ready for takeoff! Checking sensor, storage, and GCS status..."
