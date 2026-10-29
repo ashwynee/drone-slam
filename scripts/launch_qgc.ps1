@@ -36,8 +36,7 @@ $shortcutRoots = @(
     (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'),
     ([Environment]::GetFolderPath('Desktop')),
     (Join-Path $env:USERPROFILE 'Desktop'),
-    (Join-Path $env:USERPROFILE 'OneDrive\Desktop'),
-    (Join-Path $env:OneDrive 'Desktop')
+    (Join-Path $env:USERPROFILE 'OneDrive\Desktop')
 ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
 
 $shortcuts = @()
