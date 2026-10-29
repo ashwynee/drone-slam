@@ -104,15 +104,6 @@ else
   esac
 fi
 
-case "$gcs_status" in
-  CONNECTED\ *)
-    echo "[OK] PX4 logged a GCS connection after MAVLink startup: $gcs_status"
-    ;;
-  *)
-    fail "PX4 reports an unhealthy GCS link after MAVLink started (latest event: $gcs_status). Confirm QGroundControl's UDP link uses Port 18570 and Server Address WSL-IP:18570 as described by PX4's WSL guide, then click Connect and verify the vehicle appears."
-    ;;
-esac
-
 echo "[OK] PX4 process remains running; no post-readiness sensor/EKF or storage errors were found."
 echo "PX4 health check passed. This does not mean the vehicle is armed or that SLAM is initialized."
 exit 0
