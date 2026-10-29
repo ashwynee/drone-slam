@@ -3,7 +3,7 @@
 # Do not enable nounset in this script: ROS 2 setup files may reference unset vars.
 set -Ee -o pipefail
 
-readonly PRECHECK_VERSION="2026-10-29.6"
+readonly PRECHECK_VERSION="2026-10-29.7"
 fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
 ok() { echo "[OK] $*"; }
 
@@ -73,6 +73,12 @@ if [[ -n "$existing" ]]; then
   fail "Old Drone-SLAM processes remain after the stop step."
 fi
 ok "No duplicate Drone-SLAM processes found."
+
+# Catch malformed helper downloads before the launcher starts PX4.
+for script in prepare_demo_run.sh preflight_demo.sh stop_demo.sh wait_for_px4_ready.sh run_px4_gz.sh wait_for_gz_camera.sh wait_for_ros_camera.sh wait_for_ground_truth.sh verify_orbslam_process.sh; do
+  bash -n "$HOME/drone-slam/scripts/$script" || fail "Shell syntax check failed for $HOME/drone-slam/scripts/$script."
+done
+ok "All downloaded Linux launcher helpers pass bash -n syntax checks."
 
 # Isolate ROS setup from inherited shell options and profile files. nounset must be off.
 if env -u SHELLOPTS bash --noprofile --norc -c '
