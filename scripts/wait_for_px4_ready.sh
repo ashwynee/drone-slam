@@ -3,7 +3,7 @@
 # Avoid 'set -e' here so a failed diagnostic command never exits silently.
 set -uo pipefail
 
-readonly PX4_HEALTH_VERSION="2026-10-29.12"
+readonly PX4_HEALTH_VERSION="2026-10-29.13"
 LOG="$HOME/drone-slam/results/live_gazebo/px4_console.log"
 
 fail() {
@@ -86,7 +86,7 @@ gcs_status="$(awk -v start="$mavlink_line" '
   NR >= start && /Preflight Fail: No connection to the GCS/ { status="FAILED"; line=NR }
   NR >= start && /Connection to ground station lost/ { status="LOST"; line=NR }
   NR >= start && /GCS connection regained/ { status="CONNECTED"; line=NR }
-  END { if (status != "") printf "%s %d\\n", status, line }
+  END { if (status != "") printf "%s %d\n", status, line }
 ' "$LOG")"
 
 if [[ -z "$gcs_status" ]]; then
