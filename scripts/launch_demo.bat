@@ -17,7 +17,7 @@ if errorlevel 2 goto cancelled
 set "FAIL_STAGE=updating launcher helper scripts"
 echo.
 echo [1/7] Updating Linux helper scripts from GitHub...
-wsl.exe -e bash -lc "set -euo pipefail; mkdir -p ~/drone-slam/scripts; for f in prepare_demo_run.sh preflight_demo.sh stop_demo.sh wait_for_px4_ready.sh run_px4_gz.sh wait_for_gz_camera.sh wait_for_ros_camera.sh wait_for_ground_truth.sh verify_orbslam_process.sh; do curl -fsSL --retry 2 --connect-timeout 10 https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/$f -o ~/drone-slam/scripts/$f.tmp || exit 1; mv ~/drone-slam/scripts/$f.tmp ~/drone-slam/scripts/$f || exit 1; done; chmod +x ~/drone-slam/scripts/*.sh"
+wsl.exe -e bash -lc "set -euo pipefail; mkdir -p ~/drone-slam/scripts; for f in prepare_demo_run.sh preflight_demo.sh stop_demo.sh wait_for_px4_ready.sh run_px4_gz.sh wait_for_gz_camera.sh wait_for_ros_camera.sh wait_for_ground_truth.sh verify_orbslam_process.sh; do curl -fsSL --retry 2 --connect-timeout 10 "https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/$f?rev=20261029.3" -o ~/drone-slam/scripts/$f.tmp || exit 1; mv ~/drone-slam/scripts/$f.tmp ~/drone-slam/scripts/$f || exit 1; done; chmod +x ~/drone-slam/scripts/*.sh"
 if errorlevel 1 goto failed
 
 set "FAIL_STAGE=stopping old demo processes"
