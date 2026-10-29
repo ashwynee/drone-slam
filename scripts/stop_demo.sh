@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+readonly STOP_DEMO_VERSION="2026-10-29.6"
 set -Eeuo pipefail
 
 # Stop only processes belonging to this Drone-SLAM PX4/Gazebo demo.
@@ -7,7 +8,7 @@ patterns=(
   '[o]rbslam3_node'
   '[p]arameter_bridge.*world/walls/model/x500_mono_cam_0'
   '[r]ecord_gt.py'
-  '[p]x4_sitl_default'
+  '[/]px4_sitl_default/bin/px4([[:space:]]|$)'
   '[g]z sim.*walls'
   '[m]ake px4_sitl gz_x500_mono_cam_walls'
 )
