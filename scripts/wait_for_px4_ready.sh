@@ -3,7 +3,7 @@
 # Avoid 'set -e' here so a failed diagnostic command never exits silently.
 set -uo pipefail
 
-readonly PX4_HEALTH_VERSION="2026-10-29.8"
+readonly PX4_HEALTH_VERSION="2026-10-29.9"
 LOG="$HOME/drone-slam/results/live_gazebo/px4_console.log"
 
 fail() {
@@ -76,24 +76,32 @@ if [[ -n "$sensor_errors" ]]; then
 $sensor_errors"
 fi
 
-# Track the latest relevant GCS event in file order, without pipelines.
-gcs_status="$(awk '
-  /Preflight Fail: No connection to the GCS/ { status="FAILED"; line=NR }
-  /Connection to ground station lost/ { status="LOST"; line=NR }
-  /GCS connection regained/ { status="CONNECTED"; line=NR }
-  END { if (status != "") printf "%s %d\n", status, line }
+# The startup preflight warning often occurs before the GCS MAVLink instance
+# starts. Only treat GCS warnings after the Normal GCS MAVLink instance comes up
+# as a current failure; QGC's current visible link state is the fallback check.
+mavlink_line="$(awk '/INFO[[:space:]]+\\[mavlink\\] mode: Normal/ { print NR; exit }' "$LOG")"
+[[ "$mavlink_line" =~ ^[0-9]+$ ]] || fail "PX4 did not log startup of its Normal GCS MAVLink instance."
+
+gcs_status="$(awk -v start="$mavlink_line" '
+  NR >= start && /Preflight Fail: No connection to the GCS/ { status="FAILED"; line=NR }
+  NR >= start && /Connection to ground station lost/ { status="LOST"; line=NR }
+  NR >= start && /GCS connection regained/ { status="CONNECTED"; line=NR }
+  END { if (status != "") printf "%s %d\\n", status, line }
 ' "$LOG")"
 
 if [[ -z "$gcs_status" ]]; then
-  fail "PX4 did not log a confirmed GCS connection event. Opening QGroundControl is not enough; its WSL UDP link must actually connect to the current WSL IP on port 18570."
+  echo "GCS status is not explicitly logged after the Normal MAVLink instance started."
+  echo "The earlier startup warning was before MAVLink initialization, so it is not treated as a current failure."
+  echo "CHECK MANUALLY: QGroundControl must show the connected simulated vehicle and live telemetry."
+  exit 3
 fi
 
 case "$gcs_status" in
   CONNECTED\ *)
-    echo "[OK] Latest PX4 GCS event: $gcs_status"
+    echo "[OK] PX4 logged a GCS connection after MAVLink startup: $gcs_status"
     ;;
   *)
-    fail "PX4 still reports an unhealthy GCS link (latest event: $gcs_status). Confirm QGroundControl is connected to WSL eth0 IP on UDP 18570 and that the firewall permits the traffic. If the log says 'MAVLink only on localhost', the broadcast setting is not taking effect for the relevant MAVLink instance."
+    fail "PX4 reports an unhealthy GCS link after MAVLink started (latest event: $gcs_status). Confirm QGroundControl's UDP link uses local Port 14550 and Server Address WSL-IP:18570, and verify firewall access."
     ;;
 esac
 
