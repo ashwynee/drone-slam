@@ -3,7 +3,7 @@
 # Do not enable nounset in this script: ROS 2 setup files may reference unset vars.
 set -Ee -o pipefail
 
-readonly PRECHECK_VERSION="2026-10-29.5"
+readonly PRECHECK_VERSION="2026-10-29.6"
 fail() { echo; echo "PRECHECK FAILED: $*" >&2; exit 1; }
 ok() { echo "[OK] $*"; }
 
@@ -67,7 +67,7 @@ for dir in "$px4_rootfs" "$px4_rootfs/log"; do
 done
 ok "PX4 repository, SITL rootfs, and log directory pass write/read tests."
 
-existing="$(pgrep -af '[p]x4_sitl_default|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_node|[p]arameter_bridge.*world/walls/model/x500_mono_cam_0|[r]ecord_gt.py' || true)"
+existing="$(pgrep -af '[/]px4_sitl_default/bin/px4([[:space:]]|$)|[m]ake px4_sitl gz_x500_mono_cam_walls|[g]z sim.*walls|[o]rbslam3_node|[p]arameter_bridge.*world/walls/model/x500_mono_cam_0|[r]ecord_gt.py' || true)"
 if [[ -n "$existing" ]]; then
   echo "$existing"
   fail "Old Drone-SLAM processes remain after the stop step."
