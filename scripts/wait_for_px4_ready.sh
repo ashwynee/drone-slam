@@ -3,7 +3,7 @@
 # Avoid 'set -e' here so a failed diagnostic command never exits silently.
 set -uo pipefail
 
-readonly PX4_HEALTH_VERSION="2026-10-29.10"
+readonly PX4_HEALTH_VERSION="2026-10-29.11"
 LOG="$HOME/drone-slam/results/live_gazebo/px4_console.log"
 
 fail() {
@@ -90,10 +90,18 @@ gcs_status="$(awk -v start="$mavlink_line" '
 ' "$LOG")"
 
 if [[ -z "$gcs_status" ]]; then
-  echo "GCS status is not explicitly logged after the Normal MAVLink instance started."
-  echo "The earlier startup warning was before MAVLink initialization, so it is not treated as a current failure."
-  echo "CHECK MANUALLY: QGroundControl must show the connected simulated vehicle and live telemetry."
-  exit 3
+  echo "[WARN] PX4 did not print an explicit post-start GCS connection transition in its console log."
+  echo "The earlier preflight warning occurred before MAVLink startup; this alone does not prove that the link is still down."
+  echo "The launcher will ask you to confirm the vehicle is visible in QGroundControl before it starts the ROS pipeline."
+else
+  case "$gcs_status" in
+    CONNECTED\\ *)
+      echo "[OK] PX4 logged a GCS connection after MAVLink startup: $gcs_status"
+      ;;
+    *)
+      fail "PX4 reports an unhealthy GCS link after MAVLink started (latest event: $gcs_status). Confirm QGroundControl's UDP link uses Port 18570 and Server Address WSL-IP:18570 as described by PX4's WSL guide, then click Connect and verify the vehicle appears."
+      ;;
+  esac
 fi
 
 case "$gcs_status" in
