@@ -3,7 +3,7 @@
 # Avoid 'set -e' here so a failed diagnostic command never exits silently.
 set -uo pipefail
 
-readonly PX4_HEALTH_VERSION="2026-10-29.11"
+readonly PX4_HEALTH_VERSION="2026-10-29.12"
 LOG="$HOME/drone-slam/results/live_gazebo/px4_console.log"
 
 fail() {
@@ -32,14 +32,14 @@ for ((i=1; i<=180; i++)); do
     break
   fi
 
-  if pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[/]px4_sitl_default/bin/px4([[:space:]]|$)' >/dev/null 2>&1; then
+  if pgrep -x px4 >/dev/null 2>&1; then
     process_seen=1
   elif (( i >= 20 )) && (( process_seen == 0 )); then
     fail "PX4/Gazebo process did not appear within 20 seconds. Check the PX4 + Gazebo window."
   elif (( process_seen == 1 )) && (( i >= 20 )); then
     # If the process disappeared after having been seen, report failure instead of
     # waiting the full timeout on a stale log.
-    if ! pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[/]px4_sitl_default/bin/px4([[:space:]]|$)' >/dev/null 2>&1; then
+    if ! pgrep -x px4 >/dev/null 2>&1; then
       fail "PX4/Gazebo process exited before reporting Ready for takeoff."
     fi
   fi
@@ -95,7 +95,7 @@ if [[ -z "$gcs_status" ]]; then
   echo "The launcher will ask you to confirm the vehicle is visible in QGroundControl before it starts the ROS pipeline."
 else
   case "$gcs_status" in
-    CONNECTED\\ *)
+    CONNECTED*)
       echo "[OK] PX4 logged a GCS connection after MAVLink startup: $gcs_status"
       ;;
     *)
