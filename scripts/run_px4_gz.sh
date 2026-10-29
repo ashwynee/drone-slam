@@ -10,6 +10,7 @@ cd "$PX4_DIR" || { echo "ERROR: PX4-Autopilot directory not found: $PX4_DIR"; re
 : > "$LOG" || { echo "ERROR: Cannot create PX4 console log at $LOG"; read -r -p "Press Enter to close..." _; exit 1; }
 echo "PX4/Gazebo console output is also being saved to: $LOG"
 echo "Starting PX4 SITL + Gazebo walls world. No arming or movement is commanded."
+echo "MAVLink settings: PX4_NET_INTERFACE=eth0, PX4_PARAM_MAV_0_BROADCAST=1"
 PX4_PARAM_MAV_0_BROADCAST=1 PX4_NET_INTERFACE=eth0 PX4_SIM_SPEED_FACTOR=1 make px4_sitl gz_x500_mono_cam_walls 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 echo
