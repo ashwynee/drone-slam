@@ -56,7 +56,7 @@ ready_line="$(awk '/DRONE-SLAM PX4 RUN STARTED UTC=/ { run_start=NR } run_start 
 echo "[OK] PX4 reported Ready for takeoff! Checking sensor, storage, and GCS status..."
 sleep 10
 
-if ! pgrep -af '[m]ake px4_sitl gz_x500_mono_cam_walls|[p]x4_sitl_default' >/dev/null 2>&1; then
+if ! pgrep -x px4 >/dev/null 2>&1; then
   fail "PX4/Gazebo exited during the health check."
 fi
 
