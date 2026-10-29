@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-readonly PX4_LAUNCH_VERSION="2026-10-29.8"
+readonly PX4_LAUNCH_VERSION="2026-10-29.9"
 set -uo pipefail
 
 PX4_DIR="$HOME/PX4-Autopilot"
@@ -11,7 +11,7 @@ cd "$PX4_DIR" || { echo "ERROR: PX4-Autopilot directory not found: $PX4_DIR"; re
 echo "PX4/Gazebo console output is also being saved to: $LOG"
 echo "Starting PX4 SITL + Gazebo walls world. No arming or movement is commanded."
 echo "MAVLink settings: PX4_NET_INTERFACE=eth0, PX4_PARAM_MAV_0_BROADCAST=1"
-printf "DRONE-SLAM PX4 RUN STARTED UTC=%s\\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" | tee -a "$LOG"
+printf "DRONE-SLAM PX4 RUN STARTED UTC=%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" | tee -a "$LOG"
 PX4_PARAM_MAV_0_BROADCAST=1 PX4_NET_INTERFACE=eth0 PX4_SIM_SPEED_FACTOR=1 make px4_sitl gz_x500_mono_cam_walls 2>&1 | tee -a "$LOG"
 rc=${PIPESTATUS[0]}
 echo
