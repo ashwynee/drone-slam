@@ -45,17 +45,12 @@ if errorlevel 1 goto failed
 
 set "FAIL_STAGE=launching QGroundControl"
 echo.
-echo [4/7] Opening QGroundControl (or leaving it open if already running)...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; if (Get-Process -Name QGroundControl -ErrorAction SilentlyContinue) { Write-Host 'QGroundControl is already running.'; exit 0 }; $roots=@($env:ProgramData+'\Microsoft\Windows\Start Menu\Programs',$env:APPDATA+'\Microsoft\Windows\Start Menu\Programs'); $lnk=Get-ChildItem $roots -Filter 'QGroundControl.lnk' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1; if($lnk) { Start-Process $lnk.FullName; exit 0 }; $pf86=[Environment]::GetEnvironmentVariable('ProgramFiles(x86)'); $paths=@(($env:ProgramFiles+'\QGroundControl\QGroundControl.exe'),($pf86+'\QGroundControl\QGroundControl.exe'),($env:LOCALAPPDATA+'\Programs\QGroundControl\QGroundControl.exe')); $exe=$paths | Where-Object { Test-Path $_ } | Select-Object -First 1; if($exe) { Start-Process $exe; exit 0 }; Write-Error 'QGroundControl was not found'; exit 1"
-if errorlevel 1 (
-  echo QGroundControl could not be launched automatically.
-  echo Open QGroundControl from the Windows Start menu, then return here.
-  pause
-  powershell.exe -NoProfile -Command "if (Get-Process -Name QGroundControl -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
-  if errorlevel 1 goto failed
-)
+echo [4/7] Opening QGroundControl...
+echo Searching shortcuts and common install paths. If none are found, a file picker will let you select QGroundControl.exe.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; try { $p=Join-Path $env:TEMP 'Drone-SLAM-launch_qgc.ps1'; Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/ashwynee/drone-slam/main/scripts/launch_qgc.ps1?rev=20261029.4' -OutFile $p; if (!(Test-Path $p)) { throw 'QGroundControl helper download failed' }; & $p } catch { Write-Error $_; exit 1 }"
+if errorlevel 1 goto failed
 timeout /t 15 /nobreak >nul
-powershell.exe -NoProfile -Command "if (Get-Process -Name QGroundControl -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"
+powershell.exe -NoProfile -Command "if (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '(?i)qgroundcontrol|qgc' }) { exit 0 } else { exit 1 }"
 if errorlevel 1 (
   echo QGroundControl did not stay open.
   echo Open it from the Windows Start menu and try the launcher again.
