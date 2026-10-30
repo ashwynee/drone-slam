@@ -106,7 +106,7 @@ The expected message type is `sensor_msgs/msg/Image`. Let `ros2 topic hz` run fo
 
 ### Terminal 5 — ORB-SLAM3 ROS 2 node
 
-Build the package after source changes:
+The repository node declares an `image_topic` parameter, defaulting to `/camera/image`. Build the ROS package after updating its source in the workspace:
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -116,7 +116,7 @@ source install/setup.bash
 export LD_LIBRARY_PATH="$HOME/ORB_SLAM3/lib:$LD_LIBRARY_PATH"
 ```
 
-Launch using the exact ROS image topic discovered in Terminal 4. The node's `image_topic` parameter is intended to make the input topic configurable:
+Launch using the exact ROS image topic discovered in Terminal 4:
 
 ```bash
 ros2 run orbslam3_ros orbslam3_node --ros-args \
@@ -176,7 +176,7 @@ The repository contains earlier offline TUM RGB-D and EuRoC experiments. Their m
 
 ## Next engineering priorities
 
-1. Make the live camera topic configurable and verify topic discovery/bridge data end to end.
+1. Verify the real camera topic through Gazebo, ROS bridge, and the configurable node end to end.
 2. Increase and measure image rate/resolution without destabilizing the WSL/Gazebo pipeline.
 3. Fix startup tracking transients and investigate trajectory jumps.
 4. Estimate camera-to-body extrinsics and correct timestamp/frame conventions.
