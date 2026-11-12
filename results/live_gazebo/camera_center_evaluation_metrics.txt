@@ -1,0 +1,14 @@
+CAMERA-CENTRE EVALUATION
+Flight window: 2243.00–2258.00 s
+SLAM poses in window: 76
+Moving poses evaluated: 49
+Evaluated interval: 2244.000–2256.400 s
+Camera mount offset (body frame): [0.12, 0.03, 0.242] m
+
+Body-centre aligned ATE RMSE: 0.150331 m
+Camera-centre corrected aligned ATE RMSE: 0.148812 m
+Corrected median error: 0.083592 m
+Corrected 95th percentile: 0.328127 m
+Corrected maximum error: 0.503462 m
+
+Similarity alignment was fitted on the evaluated flight segment. These metrics are not independent metric-accuracy measurements.
